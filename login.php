@@ -94,7 +94,14 @@ $csrf_token = generate_csrf_token();
     <title>Login - Smart Parking System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        * {
+            font-family: 'Poppins', sans-serif;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
         body {
             min-height: 100vh;
             background: linear-gradient(135deg, #00416A, #E4E5E6);
@@ -104,46 +111,104 @@ $csrf_token = generate_csrf_token();
             padding: 20px;
         }
         .login-container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
+            display: flex;
             width: 100%;
             max-width: 900px;
-            display: flex;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            overflow: hidden;
         }
         .login-image {
+            display: none;
             flex: 1;
             background-image: url('image/login-back.jpg');
             background-size: cover;
             background-position: center;
-            min-height: 500px;
-            display: none;
+            position: relative;
+        }
+        .login-image::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 65, 106, 0.4);
+        }
+        .login-image-content {
+            position: absolute;
+            bottom: 2rem;
+            left: 2rem;
+            color: white;
+            z-index: 1;
+        }
+        .login-image-content h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+        .login-image-content p {
+            font-size: 1.1rem;
+            max-width: 80%;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
         .login-form {
             flex: 1;
-            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #fff;
+            padding: 2.5rem;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+        }
+        .form-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .form-header img {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 1rem;
+            background-color: #5a67d8;
+            padding: 10px;
+            border-radius: 10px;
         }
         .form-title {
+            text-align: center;
+            margin-bottom: 0.5rem;
             color: #00416A;
-            margin-bottom: 10px;
+            font-size: 1.75rem;
             font-weight: 700;
         }
         .form-subtitle {
+            text-align: center;
+            margin-bottom: 2rem;
             color: #666;
-            margin-bottom: 30px;
+            font-size: 0.95rem;
         }
         .input-group {
-            margin-bottom: 20px;
-            position: relative;
+            margin-bottom: 1.5rem;
         }
         .input-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 0.5rem;
             color: #333;
+            font-weight: 500;
+            font-size: 0.95rem;
         }
         .input-wrapper {
             position: relative;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background-color: #f0f4f8;
+        }
+        .input-wrapper:focus-within {
+            border-color: #00416A;
+            box-shadow: 0 0 0 3px rgba(0, 65, 106, 0.1);
         }
         .input-wrapper i {
             position: absolute;
@@ -155,29 +220,34 @@ $csrf_token = generate_csrf_token();
         .input-wrapper input {
             width: 100%;
             padding: 12px 15px 12px 45px;
-            border: 1px solid #ddd;
+            border: none;
             border-radius: 8px;
-            font-size: 16px;
-            transition: all 0.3s;
+            font-size: 0.95rem;
+            background: transparent;
         }
         .input-wrapper input:focus {
-            border-color: #00416A;
-            box-shadow: 0 0 0 3px rgba(0, 65, 106, 0.2);
             outline: none;
         }
         .password-toggle {
             position: absolute;
-            right: 15px;
+            right: 12px;
             top: 50%;
             transform: translateY(-50%);
             color: #666;
             cursor: pointer;
+            z-index: 10;
+            background: transparent;
+            border: none;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .remember-forgot {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 1.5rem;
         }
         .remember-me {
             display: flex;
@@ -185,10 +255,22 @@ $csrf_token = generate_csrf_token();
         }
         .remember-me input {
             margin-right: 8px;
+            cursor: pointer;
+        }
+        .remember-me label {
+            font-size: 0.9rem;
+            color: #555;
+            cursor: pointer;
         }
         .forgot-password a {
             color: #00416A;
             text-decoration: none;
+            transition: color 0.3s ease;
+            font-size: 0.9rem;
+        }
+        .forgot-password a:hover {
+            color: #002D4A;
+            text-decoration: underline;
         }
         .btn {
             width: 100%;
@@ -197,9 +279,14 @@ $csrf_token = generate_csrf_token();
             color: white;
             border: none;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
         }
         .btn:hover {
             background: #002D4A;
@@ -208,21 +295,67 @@ $csrf_token = generate_csrf_token();
         }
         .switch-form {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 1.5rem;
             color: #666;
+            font-size: 0.9rem;
         }
         .switch-form a {
             color: #00416A;
             text-decoration: none;
             font-weight: 600;
+            transition: color 0.3s ease;
+        }
+        .switch-form a:hover {
+            color: #002D4A;
+            text-decoration: underline;
         }
         .login-footer {
             text-align: center;
-            margin-top: 30px;
-            color: #999;
-            font-size: 14px;
+            margin-top: 2rem;
+            color: #666;
+            font-size: 0.85rem;
         }
-        @media (min-width: 768px) {
+        /* Animation for form elements */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Error and success messages */
+        .error-message {
+            background: #fff5f5;
+            color: #e53e3e;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            border: 1px solid #fed7d7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+        .success-message {
+            background: #f0fff4;
+            color: #2ecc71;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            border: 1px solid #c3ffd9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+        @media (min-width: 992px) {
+            .login-container {
+                display: flex;
+            }
             .login-image {
                 display: block;
             }
@@ -231,60 +364,79 @@ $csrf_token = generate_csrf_token();
 </head>
 <body>
     <div class="login-container">
-        <div class="login-image"></div>
-        <div class="login-form">
-            <h2 class="form-title">Welcome Back</h2>
-            <p class="form-subtitle">Please login to your account</p>
-
-            <?php if ($error): ?>
-                <div class="alert alert-danger"><?php echo $error; ?></div>
-            <?php endif; ?>
-
-            <?php if ($success): ?>
-                <div class="alert alert-success"><?php echo $success; ?></div>
-            <?php endif; ?>
-
-            <form method="POST" action="">
-                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-
-                <div class="input-group">
-                    <label for="email">Email</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-envelope"></i>
-                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($email); ?>" placeholder="Enter your email" required>
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label for="password">Password</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
-                        <i class="fas fa-eye password-toggle" onclick="togglePassword('password')"></i>
-                    </div>
-                </div>
-
-                <div class="remember-forgot">
-                    <div class="remember-me">
-                        <input type="checkbox" id="remember" name="remember">
-                        <label for="remember">Remember me</label>
-                    </div>
-                    <div class="forgot-password">
-                        <a href="forgot-password.php">Forgot Password?</a>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn">
-                    <i class="fas fa-sign-in-alt"></i> Login
-                </button>
-            </form>
-
-            <div class="switch-form">
-                Don't have an account? <a href="register.php">Sign Up</a>
+        <!-- Left side image (visible on larger screens) -->
+        <div class="login-image">
+            <div class="login-image-content">
+                <h2>Online Parking System</h2>
+                <p>Manage your parking spots efficiently with our smart parking solution.</p>
             </div>
+        </div>
 
-            <div class="login-footer">
-                &copy; <?php echo date('Y'); ?> Smart Parking System. All rights reserved.
+        <!-- Right side form -->
+        <div class="login-form">
+            <div class="container fade-in">
+                <div class="form-header">
+                    <img src="https://img.icons8.com/color/96/000000/parking.png" alt="Online Parking Logo">
+                    <h2 class="form-title">Welcome Back</h2>
+                    <p class="form-subtitle">Please login to your account</p>
+                </div>
+
+                <?php if ($error): ?>
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i> <?php echo $error; ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($success): ?>
+                    <div class="success-message">
+                        <i class="fas fa-check-circle"></i> <?php echo $success; ?>
+                    </div>
+                <?php endif; ?>
+
+                <form method="POST" action="">
+                    <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+
+                    <div class="input-group">
+                        <label for="email">Email</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($email); ?>" placeholder="Enter your email" required>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="password">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                            <button type="button" class="password-toggle" onclick="togglePassword('password')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="remember-forgot">
+                        <div class="remember-me">
+                            <input type="checkbox" id="remember" name="remember">
+                            <label for="remember">Remember me</label>
+                        </div>
+                        <div class="forgot-password">
+                            <a href="forgot-password.php">Forgot Password?</a>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </form>
+
+                <div class="switch-form">
+                    Don't have an account? <a href="register.php">Sign Up</a>
+                </div>
+
+                <div class="login-footer">
+                    &copy; <?php echo date('Y'); ?> Online Parking System. All rights reserved.
+                </div>
             </div>
         </div>
     </div>
@@ -292,7 +444,8 @@ $csrf_token = generate_csrf_token();
     <script>
         function togglePassword(inputId) {
             const input = document.getElementById(inputId);
-            const icon = input.nextElementSibling;
+            const button = input.nextElementSibling;
+            const icon = button.querySelector('i');
 
             if (input.type === 'password') {
                 input.type = 'text';

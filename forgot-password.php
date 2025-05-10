@@ -1,28 +1,26 @@
 <?php
 /**
- * Registration page for Smart Parking System
+ * Forgot Password page for Online Parking System
  */
 require_once 'database/db.php';
 
 // Initialize variables
-$name = '';
 $email = '';
 $error = '';
 $success = '';
 
-// Process registration form
+// Process forgot password form
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Verify CSRF token
     if (!isset($_POST['csrf_token']) || !verify_csrf_token($_POST['csrf_token'])) {
         $error = "Invalid form submission. Please try again.";
     } else {
-        $name = sanitize_input($_POST['name']);
         $email = sanitize_input($_POST['email']);
         $password = $_POST['password'];
         $confirm_password = $_POST['confirm_password'];
 
         // Validate input
-        if (empty($name) || empty($email) || empty($password) || empty($confirm_password)) {
+        if (empty($email) || empty($password) || empty($confirm_password)) {
             $error = "All fields are required.";
         } elseif (!validate_email($email)) {
             $error = "Please enter a valid email address.";
@@ -31,35 +29,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (!validate_password_strength($password)) {
             $error = "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number.";
         } else {
-            // Check if email already exists
-            $check_sql = "SELECT * FROM users WHERE email = ?";
-            $check_stmt = $conn->prepare($check_sql);
-            $check_stmt->bind_param("s", $email);
-            $check_stmt->execute();
-            $check_result = $check_stmt->get_result();
+            // Check if email exists
+            $sql = "SELECT * FROM users WHERE email = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $result = $stmt->get_result();
 
-            if ($check_result->num_rows > 0) {
-                $error = "Email already exists. Please use a different email or login.";
-            } else {
-                // Hash password
+            if ($result->num_rows > 0) {
+                // Hash the new password
                 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-                // Insert new user
-                $sql = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
-                $stmt = $conn->prepare($sql);
-                $stmt->bind_param("sss", $name, $email, $hashed_password);
+                // Update password directly
+                $update_sql = "UPDATE users SET password = ? WHERE email = ?";
+                $update_stmt = $conn->prepare($update_sql);
+                $update_stmt->bind_param("ss", $hashed_password, $email);
 
-                if ($stmt->execute()) {
-                    $success = "Registration successful! You can now login.";
-                    // Clear form fields
-                    $name = '';
-                    $email = '';
-
-                    // Redirect to login page after 2 seconds
+                if ($update_stmt->execute()) {
+                    $success = "Password updated successfully! Redirecting to login...";
                     header("refresh:2;url=login.php");
                 } else {
-                    $error = "Error during registration. Please try again.";
+                    $error = "Error updating password. Please try again.";
                 }
+            } else {
+                $error = "No account found with this email address.";
             }
         }
     }
@@ -74,10 +67,10 @@ $csrf_token = generate_csrf_token();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Smart Parking System</title>
+    <title>Forgot Password - Online Parking System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             font-family: 'Poppins', sans-serif;
@@ -93,7 +86,7 @@ $csrf_token = generate_csrf_token();
             justify-content: center;
             padding: 20px;
         }
-        .register-container {
+        .login-container {
             display: flex;
             width: 100%;
             max-width: 900px;
@@ -101,15 +94,15 @@ $csrf_token = generate_csrf_token();
             border-radius: 15px;
             overflow: hidden;
         }
-        .register-image {
+        .login-image {
             display: none;
             flex: 1;
-            background-image: url('image/registration-back.jpg');
+            background-image: url('image/forgot-password-back.jpg');
             background-size: cover;
             background-position: center;
             position: relative;
         }
-        .register-image::before {
+        .login-image::before {
             content: '';
             position: absolute;
             top: 0;
@@ -118,24 +111,24 @@ $csrf_token = generate_csrf_token();
             height: 100%;
             background: rgba(0, 65, 106, 0.4);
         }
-        .register-image-content {
+        .login-image-content {
             position: absolute;
             bottom: 2rem;
             left: 2rem;
             color: white;
             z-index: 1;
         }
-        .register-image-content h2 {
+        .login-image-content h2 {
             font-size: 2.5rem;
             margin-bottom: 1rem;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
         }
-        .register-image-content p {
+        .login-image-content p {
             font-size: 1.1rem;
             max-width: 80%;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
-        .register-form {
+        .login-form {
             flex: 1;
             display: flex;
             justify-content: center;
@@ -226,10 +219,11 @@ $csrf_token = generate_csrf_token();
             align-items: center;
             justify-content: center;
         }
-        .password-strength {
-            margin-top: 5px;
+        .form-text {
             font-size: 0.85rem;
             color: #666;
+            margin-top: 0.5rem;
+            display: block;
         }
         .btn {
             width: 100%;
@@ -268,7 +262,7 @@ $csrf_token = generate_csrf_token();
             color: #002D4A;
             text-decoration: underline;
         }
-        .register-footer {
+        .login-footer {
             text-align: center;
             margin-top: 2rem;
             color: #666;
@@ -311,100 +305,115 @@ $csrf_token = generate_csrf_token();
             gap: 0.5rem;
             font-weight: 500;
         }
+        /* Loading animation */
+        .loading {
+            display: none;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(0, 65, 106, 0.2);
+            border-radius: 50%;
+            border-top-color: #00416A;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
         @media (min-width: 992px) {
-            .register-container {
+            .login-container {
                 display: flex;
             }
-            .register-image {
+            .login-image {
                 display: block;
             }
         }
     </style>
 </head>
 <body>
-    <div class="register-container">
+    <div class="login-container">
         <!-- Left side image (visible on larger screens) -->
-        <div class="register-image">
-            <div class="register-image-content">
-                <h2>Join Online Parking</h2>
-                <p>Create an account to start managing your parking experience efficiently.</p>
+        <div class="login-image">
+            <div class="login-image-content">
+                <h2>Password Recovery</h2>
+                <p>We'll help you get back into your account in no time.</p>
             </div>
         </div>
 
         <!-- Right side form -->
-        <div class="register-form">
+        <div class="login-form">
             <div class="container fade-in">
                 <div class="form-header">
                     <img src="https://img.icons8.com/color/96/000000/parking.png" alt="Online Parking Logo">
-                    <h2 class="form-title">Create Account</h2>
-                    <p class="form-subtitle">Sign up to get started with Online Parking</p>
+                    <h2 class="form-title">Reset Password</h2>
+                    <p class="form-subtitle">Enter your email and new password</p>
                 </div>
 
-                <?php if ($error): ?>
+                <?php if($error): ?>
                     <div class="error-message">
                         <i class="fas fa-exclamation-circle"></i> <?php echo $error; ?>
                     </div>
                 <?php endif; ?>
 
-                <?php if ($success): ?>
+                <?php if($success): ?>
                     <div class="success-message">
                         <i class="fas fa-check-circle"></i> <?php echo $success; ?>
                     </div>
                 <?php endif; ?>
 
-                <form method="POST" action="" id="registerForm">
+                <!-- Loading indicator -->
+                <div id="loading" class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Resetting password...</p>
+                </div>
+
+                <form method="POST" action="" id="resetForm">
                     <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
 
                     <div class="input-group">
-                        <label for="name">Full Name</label>
-                        <div class="input-wrapper">
-                            <i class="fas fa-user"></i>
-                            <input type="text" id="name" name="name" value="<?php echo htmlspecialchars($name); ?>" placeholder="Enter your full name" required>
-                        </div>
-                    </div>
-
-                    <div class="input-group">
-                        <label for="email">Email</label>
+                        <label for="email">Email Address</label>
                         <div class="input-wrapper">
                             <i class="fas fa-envelope"></i>
-                            <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($email); ?>" placeholder="Enter your email" required>
+                            <input type="email" id="email" name="email" placeholder="Enter your registered email" required>
                         </div>
+                        <small class="form-text">Enter the email associated with your account</small>
                     </div>
 
                     <div class="input-group">
-                        <label for="password">Password</label>
+                        <label for="password">New Password</label>
                         <div class="input-wrapper">
                             <i class="fas fa-lock"></i>
-                            <input type="password" id="password" name="password" placeholder="Create a password" required onkeyup="checkPasswordStrength()">
+                            <input type="password" id="password" name="password" placeholder="Enter new password" required>
                             <button type="button" class="password-toggle" onclick="togglePassword('password')">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
-                        <div class="password-strength" id="passwordStrength"></div>
                     </div>
 
                     <div class="input-group">
-                        <label for="confirm_password">Confirm Password</label>
+                        <label for="confirm_password">Confirm New Password</label>
                         <div class="input-wrapper">
                             <i class="fas fa-lock"></i>
-                            <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm your password" required onkeyup="checkPasswordMatch()">
+                            <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm new password" required>
                             <button type="button" class="password-toggle" onclick="togglePassword('confirm_password')">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
-                        <div class="password-strength" id="passwordMatch"></div>
                     </div>
 
-                    <button type="submit" class="btn">
-                        <i class="fas fa-user-plus"></i> Sign Up
+                    <button type="submit" class="btn" id="submitBtn">
+                        <i class="fas fa-key"></i> Reset Password
                     </button>
                 </form>
 
                 <div class="switch-form">
-                    Already have an account? <a href="login.php">Login</a>
+                    <a href="login.php"><i class="fas fa-arrow-left"></i> Back to Login</a>
                 </div>
 
-                <div class="register-footer">
+                <div class="login-footer">
                     &copy; <?php echo date('Y'); ?> Online Parking System. All rights reserved.
                 </div>
             </div>
@@ -412,6 +421,31 @@ $csrf_token = generate_csrf_token();
     </div>
 
     <script>
+        // Form submission with loading indicator
+        document.getElementById('resetForm').addEventListener('submit', function(e) {
+            // Show loading indicator
+            document.getElementById('loading').style.display = 'block';
+
+            // Disable submit button to prevent multiple submissions
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting...';
+
+            // Form will submit normally
+            // The loading indicator will be hidden when the page reloads
+        });
+
+        // Add visual feedback when focusing on inputs
+        document.getElementById('email').addEventListener('focus', function() {
+            this.parentElement.classList.add('focused');
+        });
+
+        document.getElementById('email').addEventListener('blur', function() {
+            if (this.value === '') {
+                this.parentElement.classList.remove('focused');
+            }
+        });
+
+        // Toggle password visibility
         function togglePassword(inputId) {
             const input = document.getElementById(inputId);
             const button = input.nextElementSibling;
@@ -425,90 +459,6 @@ $csrf_token = generate_csrf_token();
                 input.type = 'password';
                 icon.classList.remove('fa-eye-slash');
                 icon.classList.add('fa-eye');
-            }
-        }
-
-        function checkPasswordStrength() {
-            const password = document.getElementById('password').value;
-            const strengthDiv = document.getElementById('passwordStrength');
-
-            // Reset strength indicator
-            strengthDiv.innerHTML = '';
-
-            if (password.length === 0) return;
-
-            let strength = 0;
-            let feedback = [];
-
-            // Check length
-            if (password.length < 8) {
-                feedback.push('Password should be at least 8 characters');
-            } else {
-                strength += 1;
-            }
-
-            // Check for uppercase letters
-            if (!/[A-Z]/.test(password)) {
-                feedback.push('Add uppercase letter');
-            } else {
-                strength += 1;
-            }
-
-            // Check for lowercase letters
-            if (!/[a-z]/.test(password)) {
-                feedback.push('Add lowercase letter');
-            } else {
-                strength += 1;
-            }
-
-            // Check for numbers
-            if (!/[0-9]/.test(password)) {
-                feedback.push('Add number');
-            } else {
-                strength += 1;
-            }
-
-            // Display strength
-            let strengthText = '';
-            let strengthColor = '';
-
-            switch (strength) {
-                case 0:
-                case 1:
-                    strengthText = 'Weak';
-                    strengthColor = '#dc3545';
-                    break;
-                case 2:
-                case 3:
-                    strengthText = 'Medium';
-                    strengthColor = '#ffc107';
-                    break;
-                case 4:
-                    strengthText = 'Strong';
-                    strengthColor = '#28a745';
-                    break;
-            }
-
-            strengthDiv.innerHTML = `<span style="color: ${strengthColor};">${strengthText}</span>`;
-            if (feedback.length > 0) {
-                strengthDiv.innerHTML += ': ' + feedback.join(', ');
-            }
-        }
-
-        function checkPasswordMatch() {
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirm_password').value;
-            const matchDiv = document.getElementById('passwordMatch');
-
-            if (confirmPassword.length === 0) {
-                matchDiv.innerHTML = '';
-                return;
-            }
-
-            if (password === confirmPassword) {
-                matchDiv.innerHTML = '<span style="color: #28a745;">Passwords match</span>';
-            } else {
-                matchDiv.innerHTML = '<span style="color: #dc3545;">Passwords do not match</span>';
             }
         }
     </script>
