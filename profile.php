@@ -1,42 +1,68 @@
 <?php
-session_start();
+/**
+ * Profile page for Online Parking System
+ * Allows users to update their password
+ */
 
-// include the database connection file
+// Include database connection (which already starts the session)
 require 'database/db.php';
 
 // Ensure user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit();
-}
+require_login();
 
 $email = $_SESSION['email']; // Pre-fill email field
 $success = "";
 $error = "";
+$password_error = "";
 
 // Handle password update
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $new_password = $_POST['new_password'];
-    $confirm_password = $_POST['confirm_password'];
-
-    if ($new_password !== $confirm_password) {
-        $error = "Passwords do not match!";
+    // Verify CSRF token
+    if (!verify_csrf_token($_POST['csrf_token'])) {
+        $error = "Security validation failed. Please try again.";
     } else {
-        $hashed_password = password_hash($new_password, PASSWORD_BCRYPT);
+        $current_password = $_POST['current_password'];
+        $new_password = $_POST['new_password'];
+        $confirm_password = $_POST['confirm_password'];
 
-        // Update password in database
-        $stmt = $conn->prepare("UPDATE users SET password = ? WHERE email = ?");
-        $stmt->bind_param("ss", $hashed_password, $email);
-
-        if ($stmt->execute()) {
-            $success = "Password updated successfully!";
-            header("Location: index.php");
-            exit();
-        } else {
-            $error = "Error updating password.";
-        }
-
+        // Verify current password first
+        $stmt = $conn->prepare("SELECT password FROM users WHERE id = ?");
+        $stmt->bind_param("i", $_SESSION['user_id']);
+        $stmt->execute();
+        $stmt->bind_result($hashed_password);
+        $stmt->fetch();
         $stmt->close();
+
+        if (!password_verify($current_password, $hashed_password)) {
+            $error = "Current password is incorrect.";
+        }
+        // Check if passwords match
+        else if ($new_password !== $confirm_password) {
+            $error = "New passwords do not match!";
+        }
+        // Validate password strength
+        else if (!validate_password_strength($new_password)) {
+            $password_error = "Password must be at least 8 characters long and include uppercase, lowercase, and numbers.";
+        } else {
+            // Hash new password
+            $new_hashed_password = password_hash($new_password, PASSWORD_BCRYPT, ['cost' => 12]);
+
+            // Update password in database
+            $stmt = $conn->prepare("UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?");
+            $stmt->bind_param("si", $new_hashed_password, $_SESSION['user_id']);
+
+            if ($stmt->execute()) {
+                $success = "Password updated successfully!";
+                // Regenerate session ID for security
+                session_regenerate_id(true);
+                header("Location: index.php");
+                exit();
+            } else {
+                $error = "Error updating password.";
+            }
+
+            $stmt->close();
+        }
     }
 }
 
@@ -65,9 +91,9 @@ $conn->close();
 </head>
 
 <body class="bg-gray-100 flex flex-col items-center h-screen"
-    style="background-image: url('./image/registration-back.jpg'); background-size: cover; background-position: center; ">
+    style="background-image: url('image/registration-back.jpg'); background-size: cover; background-position: center; ">
 
-  
+
 
 
     <!-- navbar -->
@@ -149,19 +175,35 @@ $conn->close();
             <div class="mb-4 p-2 bg-red-100 text-red-700 rounded"><?php echo $error; ?></div>
         <?php endif; ?>
 
-        <form method="POST" action="" >
+        <form method="POST" action="" onsubmit="return validatePasswordForm()">
+            <!-- CSRF Token -->
+            <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
+
             <div class="mb-4">
                 <label class="block text-white">Email</label>
                 <input type="email" name="email" value="<?php echo htmlspecialchars($email); ?>" disabled
                     class="w-full px-4 py-2 border rounded-lg text-white cursor-not-allowed">
             </div>
+
+            <div class="mb-4 relative">
+                <label class="block text-white">Current Password</label>
+                <input type="password" name="current_password" id="current_password" required
+                    class="w-full px-4 py-2 border focus:outline-none focus:scale-105 transition-all ease-in-out duration-1000 rounded-lg text-white">
+                <i class="fas fa-eye absolute right-3 top-10 cursor-pointer text-white"
+                    onclick="togglePassword('current_password')"></i>
+            </div>
+
             <div class="mb-4 relative">
                 <label class="block text-white">New Password</label>
                 <input type="password" name="new_password" id="new_password" required
                     class="w-full px-4 py-2 border focus:outline-none focus:scale-105 transition-all ease-in-out duration-1000 rounded-lg text-white">
                 <i class="fas fa-eye absolute right-3 top-10 cursor-pointer text-white"
                     onclick="togglePassword('new_password')"></i>
+                <?php if ($password_error): ?>
+                    <span class="text-red-500 text-sm block mt-1"><?php echo $password_error; ?></span>
+                <?php endif; ?>
             </div>
+
             <div class="mb-4 relative">
                 <label class="block text-white">Confirm New Password</label>
                 <input type="password" name="confirm_password" id="confirm_password" required
@@ -169,6 +211,7 @@ $conn->close();
                 <i class="fas fa-eye absolute right-3 top-10 cursor-pointer text-white"
                     onclick="togglePassword('confirm_password')"></i>
             </div>
+
             <button type="submit"
                 class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500">
                 Update Password
@@ -176,6 +219,55 @@ $conn->close();
         </form>
     </div>
     <script>
+        // Function to validate password strength
+        function validatePasswordStrength(password) {
+            // At least 8 characters
+            if (password.length < 8) {
+                return false;
+            }
+
+            // At least one uppercase letter
+            if (!/[A-Z]/.test(password)) {
+                return false;
+            }
+
+            // At least one lowercase letter
+            if (!/[a-z]/.test(password)) {
+                return false;
+            }
+
+            // At least one number
+            if (!/[0-9]/.test(password)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        // Function to validate the password form
+        function validatePasswordForm() {
+            const newPassword = document.getElementById('new_password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            let isValid = true;
+
+            // Validate password strength
+            if (!validatePasswordStrength(newPassword)) {
+                alert('Password must be at least 8 characters long and include uppercase, lowercase, and numbers.');
+                document.getElementById('new_password').focus();
+                isValid = false;
+            }
+
+            // Validate password match
+            if (newPassword !== confirmPassword) {
+                alert('New passwords do not match.');
+                document.getElementById('confirm_password').focus();
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        // Function to toggle password visibility
         function togglePassword(inputId) {
             const input = document.getElementById(inputId);
             const icon = document.querySelector(`i[onclick="togglePassword('${inputId}')"]`);

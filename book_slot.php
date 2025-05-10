@@ -1,14 +1,12 @@
 <?php
-session_start();
+// Include database connection file (which already starts the session)
+require 'database/db.php';
 
 // Redirect to login if not logged in
 if (!isset($_SESSION['user_id'])) {
     echo "Please log in to book a slot.";
     exit();
 }
-
-// include the database connection file
-require 'database/db.php';
 
 // Validate and sanitize form data
 $required_fields = ['slot_id', 'vehicle_number', 'booking_date', 'booking_time', 'duration', 'cost_per_hour', 'bkash_number', 'bkash_pin'];

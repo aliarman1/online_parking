@@ -38,18 +38,20 @@ CREATE TABLE `bookings` (
   `end_time` time NOT NULL,
   `cost_per_hour` decimal(10,2) NOT NULL,
   `total_cost` decimal(10,2) NOT NULL,
-  `bkash_number` varchar(15) NOT NULL,
-  `bkash_pin` varchar(6) NOT NULL,
-  `status` varchar(20) DEFAULT 'Pending'
+  `payment_method` varchar(20) NOT NULL,
+  `payment_reference` varchar(50) NOT NULL,
+  `status` enum('Pending','Confirmed','Cancelled','Completed') DEFAULT 'Pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `bookings`
 --
 
-INSERT INTO `bookings` (`id`, `user_id`, `slot_id`, `vehicle_number`, `booking_date`, `booking_time`, `duration`, `end_time`, `cost_per_hour`, `total_cost`, `bkash_number`, `bkash_pin`, `status`) VALUES
-(11, 14, 26, 'D9', '2025-03-23', '19:55:00', 1, '20:55:00', 50.00, 50.00, '01704442185', '11111', 'Pending'),
-(12, 14, 107, 'D10', '2025-03-23', '14:17:00', 1, '15:17:00', 60.00, 60.00, '01721207767', '11111', 'Pending');
+INSERT INTO `bookings` (`id`, `user_id`, `slot_id`, `vehicle_number`, `booking_date`, `booking_time`, `duration`, `end_time`, `cost_per_hour`, `total_cost`, `payment_method`, `payment_reference`, `status`, `created_at`, `updated_at`) VALUES
+(11, 14, 26, 'D9', '2025-03-23', '19:55:00', 1, '20:55:00', 50.00, 50.00, 'bKash', '01704442185', 'Pending', NOW(), NOW()),
+(12, 14, 107, 'D10', '2025-03-23', '14:17:00', 1, '15:17:00', 60.00, 60.00, 'bKash', '01721207767', 'Pending', NOW(), NOW());
 
 -- --------------------------------------------------------
 
@@ -63,7 +65,9 @@ CREATE TABLE `parking_slots` (
   `location` varchar(100) NOT NULL,
   `is_available` tinyint(1) DEFAULT 1,
   `vehicle_type` enum('bike','car') NOT NULL,
-  `cost_per_hour` decimal(10,2) NOT NULL
+  `cost_per_hour` decimal(10,2) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -182,18 +186,61 @@ CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `username` varchar(50) NOT NULL,
   `email` varchar(100) NOT NULL,
-  `password` varchar(255) NOT NULL
+  `password` varchar(255) NOT NULL,
+  `role` enum('User','Admin') NOT NULL DEFAULT 'User',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `last_login` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `username`, `email`, `password`) VALUES
-(1, 'admin', 'admin@gmail.com', '$2y$10$6VrGiDX6voZH4uCZJVmUL.3fWPJymMHfkn8tnDrTF40GdHbOEQXDC');
+INSERT INTO `users` (`id`, `username`, `email`, `password`, `role`, `created_at`, `updated_at`) VALUES
+(1, 'admin', 'admin@gmail.com', '$2y$10$6VrGiDX6voZH4uCZJVmUL.3fWPJymMHfkn8tnDrTF40GdHbOEQXDC', 'Admin', NOW(), NOW()),
+(14, 'user14', 'user14@example.com', '$2y$10$6VrGiDX6voZH4uCZJVmUL.3fWPJymMHfkn8tnDrTF40GdHbOEQXDC', 'User', NOW(), NOW());
 
 -- Username: admin
 -- Password: admin
+-- Username: user14
+-- Password: user14
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `auth_logs`
+--
+
+CREATE TABLE `auth_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `email` varchar(100) NOT NULL,
+  `ip_address` varchar(45) NOT NULL,
+  `user_agent` text DEFAULT NULL,
+  `success` tinyint(1) NOT NULL DEFAULT 0,
+  `timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `email` (`email`),
+  KEY `ip_address` (`ip_address`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `vehicles`
+--
+
+CREATE TABLE `vehicles` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `vehicle_number` varchar(20) NOT NULL,
+  `vehicle_type` enum('bike','car') NOT NULL,
+  `model` varchar(50) DEFAULT NULL,
+  `color` varchar(30) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 --
 -- Indexes for dumped tables
 --
@@ -217,7 +264,16 @@ ALTER TABLE `parking_slots`
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `email` (`email`);
+
+--
+-- Indexes for table `vehicles`
+--
+ALTER TABLE `vehicles`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `vehicle_number` (`vehicle_number`),
+  ADD KEY `user_id` (`user_id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -239,7 +295,13 @@ ALTER TABLE `parking_slots`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT for table `vehicles`
+--
+ALTER TABLE `vehicles`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
@@ -249,8 +311,14 @@ ALTER TABLE `users`
 -- Constraints for table `bookings`
 --
 ALTER TABLE `bookings`
-  ADD CONSTRAINT `bookings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  ADD CONSTRAINT `bookings_ibfk_2` FOREIGN KEY (`slot_id`) REFERENCES `parking_slots` (`id`);
+  ADD CONSTRAINT `bookings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `bookings_ibfk_2` FOREIGN KEY (`slot_id`) REFERENCES `parking_slots` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `vehicles`
+--
+ALTER TABLE `vehicles`
+  ADD CONSTRAINT `vehicles_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

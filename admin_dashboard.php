@@ -1,11 +1,13 @@
 <?php
-session_start(); // Start session if needed
+/**
+ * Admin Dashboard for Online Parking System
+ */
 
-// Redirect to login if not logged in
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit();
-}
+// Include database connection
+require 'database/db.php';
+
+// Ensure user is admin
+require_admin();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -27,42 +29,78 @@ if (!isset($_SESSION['user_id'])) {
         <?php
         // Load default content (home page) if no page is specified
         $page = isset($_GET['page']) ? $_GET['page'] : 'a_dashboard.php';
-        if (file_exists($page)) {
+
+        // Security: Validate page parameter to prevent directory traversal
+        $allowed_pages = [
+            'a_dashboard.php',
+            'a_user.php',
+            'add_user.php',
+            'edit_user.php'
+        ];
+
+        if (in_array($page, $allowed_pages) && file_exists($page)) {
             include $page;
         } else {
-            echo "<div class='alert alert-error'>Page not found!</div>";
+            echo "<div class='alert alert-error'>Page not found or access denied!</div>";
         }
         ?>
     </div>
 
     <!-- JavaScript for Dynamic Loading -->
     <script>
+        // List of allowed pages (must match the PHP allowed_pages array)
+        const allowedPages = [
+            'a_dashboard.php',
+            'a_user.php',
+            'add_user.php',
+            'edit_user.php'
+        ];
+
+        // Function to validate page
+        function isValidPage(page) {
+            return allowedPages.includes(page);
+        }
+
+        // Handle navigation link clicks
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const page = e.target.getAttribute('data-page');
 
-                // Fetch and load content
-                fetch(page)
-                    .then(res => res.text())
-                    .then(html => {
-                        document.getElementById('content-container').innerHTML = html;
-                        history.pushState(null, '', `?page=${page}`);
-                    })
-                    .catch(err => console.error('Error loading page:', err));
+                // Security: Validate page before loading
+                if (isValidPage(page)) {
+                    // Fetch and load content
+                    fetch(page)
+                        .then(res => res.text())
+                        .then(html => {
+                            document.getElementById('content-container').innerHTML = html;
+                            history.pushState(null, '', `?page=${page}`);
+                        })
+                        .catch(err => console.error('Error loading page:', err));
+                } else {
+                    console.error('Invalid page requested');
+                    document.getElementById('content-container').innerHTML =
+                        "<div class='alert alert-error'>Page not found or access denied!</div>";
+                }
             });
         });
 
         // Handle browser back/forward
         window.addEventListener('popstate', () => {
             const urlParams = new URLSearchParams(window.location.search);
-            const page = urlParams.get('page') || 'index.php';
+            const page = urlParams.get('page') || 'a_dashboard.php';
 
-            fetch(page)
-                .then(res => res.text())
-                .then(html => {
-                    document.getElementById('content-container').innerHTML = html;
-                });
+            // Security: Validate page before loading
+            if (isValidPage(page)) {
+                fetch(page)
+                    .then(res => res.text())
+                    .then(html => {
+                        document.getElementById('content-container').innerHTML = html;
+                    });
+            } else {
+                document.getElementById('content-container').innerHTML =
+                    "<div class='alert alert-error'>Page not found or access denied!</div>";
+            }
         });
     </script>
 </body>

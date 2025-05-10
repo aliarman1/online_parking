@@ -1,5 +1,6 @@
 <?php
-session_start();
+// Include database connection file (which already starts the session)
+require 'database/db.php';
 
 // Redirect to login if not logged in
 if (!isset($_SESSION['user_id'])) {
@@ -12,9 +13,6 @@ if (isset($_POST["username"])) {
 if (isset($_POST["email"])) {
     $_SESSION['email'] = $_POST['email'];
 }
-
-// include the database connection file
-require 'database/db.php';
 
 // Handle bulk delete operation
 if (isset($_POST['delete_selected'])) {
@@ -59,7 +57,7 @@ if (isset($_GET['delete_id'])) {
 if (isset($_GET['download_csv'])) {
     $status_filter = $_GET['status_filter'] ?? '';
     $query = "
-        SELECT 
+        SELECT
             id AS booking_id,
             slot_id,
             vehicle_number,
@@ -76,9 +74,9 @@ if (isset($_GET['download_csv'])) {
                 WHEN NOW() BETWEEN CONCAT(booking_date, ' ', booking_time) AND CONCAT(booking_date, ' ', end_time) THEN 'Active'
                 ELSE 'Completed'
             END AS status
-        FROM 
+        FROM
             bookings
-        WHERE 
+        WHERE
             user_id = ?
     ";
     if (!empty($status_filter)) {
@@ -110,7 +108,7 @@ if (isset($_GET['download_csv'])) {
 // Fetch booking details for the logged-in user with dynamic status calculation
 $status_filter = $_GET['status_filter'] ?? '';
 $query = "
-    SELECT 
+    SELECT
         id AS booking_id,
         slot_id,
         vehicle_number,
@@ -127,9 +125,9 @@ $query = "
             WHEN NOW() BETWEEN CONCAT(booking_date, ' ', booking_time) AND CONCAT(booking_date, ' ', end_time) THEN 'Active'
             ELSE 'Completed'
         END AS status
-    FROM 
+    FROM
         bookings
-    WHERE 
+    WHERE
         user_id = ?
 ";
 if (!empty($status_filter)) {

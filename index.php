@@ -1,14 +1,19 @@
 <?php
-session_start();
-
-// include the database connection file
+// include the database connection file (which already starts the session)
 require 'database/db.php';
+
+// Debug session information
+error_log("Session data in index.php: " . print_r($_SESSION, true));
 
 // Redirect to login if not logged in
 if (!isset($_SESSION['user_id'])) {
+    error_log("User not logged in, redirecting to login.php");
     header("Location: login.php");
     exit();
 }
+
+// Debug successful login
+error_log("User logged in successfully with ID: " . $_SESSION['user_id'] . " and role: " . $_SESSION['role']);
 
 
 // Fetch available parking slots for the selected area, date, time, duration, and vehicle type
@@ -23,12 +28,12 @@ $end_time = date('H:i', strtotime("+$selected_duration hours", strtotime($select
 
 // Fetch available slots
 $slots = [];
-$query = "SELECT * FROM parking_slots  
-          WHERE location = '$selected_area' 
-          AND vehicle_type = '$selected_vehicle_type' 
+$query = "SELECT * FROM parking_slots
+          WHERE location = '$selected_area'
+          AND vehicle_type = '$selected_vehicle_type'
           AND id NOT IN (
-              SELECT slot_id FROM bookings 
-              WHERE booking_date = '$selected_date' 
+              SELECT slot_id FROM bookings
+              WHERE booking_date = '$selected_date'
               AND (
                   ('$selected_time' < end_time AND '$end_time' > booking_time)
               )
@@ -140,7 +145,7 @@ $conn->close();
 
     </div>
 
-    
+
     <!-- Dashboard -->
     <div class="max-w-6xl mx-auto px-4 py-8">
         <h2 class="text-3xl font-bold mb-6">Available Parking Slots</h2>
