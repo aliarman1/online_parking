@@ -190,17 +190,10 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `password`) VALUES
-(1, 'soumic', 'soumicshariar1@gmail.com', '$2y$10$6VrGiDX6voZH4uCZJVmUL.3fWPJymMHfkn8tnDrTF40GdHbOEQXDC'),
-(3, 'shahriar', 'soumicshariar1@gmail.com', '$2y$10$60wV9/3O36AXw95E5C7sYOdEKJtAEfWftfNkvSBEj8OirIsugY9ei'),
-(4, 'soumic', 'soumicshariar3@gmail.com', '$2y$10$U0kloVhKr46amowhVxOqLOiMvodnrvaM2YvQUn8WnJa9qFlFm8Sb2'),
-(5, 'soumic', 'soumic2@gmail.com', '$2y$10$XEFLzUd92nuK1PGvVYVZneJW5ZQAkvYlhIM0LwZusvrfLu/hZrkN6'),
-(10, 'shahriar', 'soumic@gmail.com', '$2y$10$NIuCqbpWXZcVBr3L4xYY.uPYGeQ0FAH3l7d4qrfOX5xc269KbyTiy'),
-(11, 'munna', 'munna@gmail.com', '$2y$10$Vat4FgIYwei7iNiOUKDBa.6YajnKNwocug8JPt360PhO65ofBHYwG'),
-(12, 'munna', 'munna1@gmail.com', '$2y$10$B0caCcq0IXa9t.JBCmae6u/WRUB3oScQeUsu1G89/tE1Z0zwVkwn2'),
-(13, 'munna', 'munna2@gmail.com', '$2y$10$dnZdc6kiVsPZpqIDGhzHk.M31IZo5cKYHf5pYvSXBNgdqzPQcVxRK'),
-(14, 'munna', 'munna3@gmail.com', '$2y$10$JOTnf3ZmL1KCxPFq8U5q2.WriGsIlTNf5Jmq8oRFYvFGRKXB5lAHm'),
-(15, 'munna', 'munna4@gmail.com', '$2y$10$P6PKctmrbrkz6Z/e.mbVXuSHqYvf4rjRFtV2hSUwPry7jBmxZuzfO');
+(1, 'admin', 'admin@gmail.com', '$2y$10$6VrGiDX6voZH4uCZJVmUL.3fWPJymMHfkn8tnDrTF40GdHbOEQXDC');
 
+-- Username: admin
+-- Password: admin
 --
 -- Indexes for dumped tables
 --

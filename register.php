@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = $_POST['username'];
     $email = $_POST['email'];
     $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
+    $role = $_POST['role'];
 
     // Check if email already exists
     $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
@@ -26,8 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $error = "Email already exists!";
     } else {
         // Insert user into database
-        $stmt = $conn->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
-        $stmt->bind_param("sss", $username, $email, $password);
+        $stmt = $conn->prepare("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("ssss", $username, $email, $password, $role);
 
         if ($stmt->execute()) {
             // header("Location: login.php"); // Redirect to login page
@@ -89,6 +90,15 @@ $conn->close();
                     autocomplete="new-password">
                 <!-- Eye icon to toggle password visibility -->
                 <i class="fas fa-eye absolute right-3 top-10 cursor-pointer text-white" onclick="togglePassword('password')"></i>
+            </div>
+
+            <!-- roll in dropdown -->
+            <div class="mb-6">
+                <label for="role" class="block text-gray-700 text-sm font-bold mb-2">Role</label>
+                <select id="role" name="role"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="User" selected>User</option>
+                </select>
             </div>
             <button type="submit"
                 class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">

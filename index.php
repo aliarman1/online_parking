@@ -140,6 +140,7 @@ $conn->close();
 
     </div>
 
+    
     <!-- Dashboard -->
     <div class="max-w-6xl mx-auto px-4 py-8">
         <h2 class="text-3xl font-bold mb-6">Available Parking Slots</h2>

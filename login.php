@@ -17,20 +17,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $password = $_POST['password'];
 
     // Fetch user from database
-    $stmt = $conn->prepare("SELECT id, username, email, password FROM users WHERE email = ?");
+    $stmt = $conn->prepare("SELECT id, username, email, password, role FROM users WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
     $stmt->store_result();
 
     if ($stmt->num_rows > 0) {
-        $stmt->bind_result($id, $username, $db_email, $hashed_password);
+        $stmt->bind_result($id, $username, $db_email, $hashed_password, $role);
         $stmt->fetch();
 
         if (password_verify($password, $hashed_password)) {
             $_SESSION['user_id'] = $id;
             $_SESSION['username'] = $username;
             $_SESSION['email'] = $db_email;
+            $_SESSION['role'] = $role;
 
+            //if username is admin
+            if ($role == 'Admin') {
+                $_SESSION['user_id'] = $id;
+                $_SESSION['username'] = $username;
+                $_SESSION['email'] = $db_email;
+                $_SESSION['role'] = $role; 
+                header("Location: admin_dashboard.php");
+                exit();
+            }
             header("Location: index.php"); // Redirect to home page
             exit();
         } else {

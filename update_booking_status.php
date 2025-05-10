@@ -1,25 +1,22 @@
 <?php
-// include the database connection file
 require 'database/db.php';
+date_default_timezone_set('Asia/Dhaka'); // Set correct timezone
 
-// Get current date and time
-$current_time = date('H:i');
-$current_date = date('Y-m-d');
+$current_time = date('Y-m-d H:i:s'); // Get current timestamp
 
-// Update status of bookings
-$query = "UPDATE bookings 
-          SET status = CASE 
-              WHEN booking_date = '$current_date' AND '$current_time' >= booking_time AND '$current_time' <= end_time THEN 'active'
-              WHEN booking_date = '$current_date' AND '$current_time' < booking_time THEN 'pending'
-              WHEN booking_date < '$current_date' OR (booking_date = '$current_date' AND '$current_time' > end_time) THEN 'done'
-              ELSE status
-          END";
+// Update bookings: "Active" → "Completed" if end time has passed
+$sql = "UPDATE bookings 
+        SET status = 'Completed' 
+        WHERE status = 'Active' AND CONCAT(booking_date, ' ', end_time) <= ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $current_time);
 
-if ($conn->query($query)) {
-    echo "Booking statuses updated successfully!";
+if ($stmt->execute()) {
+    echo "Booking statuses updated successfully.";
 } else {
-    echo "Error updating booking statuses: " . $conn->error;
+    echo "Error updating bookings: " . $stmt->error;
 }
 
+$stmt->close();
 $conn->close();
 ?>
