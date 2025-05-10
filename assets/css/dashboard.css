@@ -1,5 +1,5 @@
 /**
- * Dashboard specific styles for Smart Parking System
+ * Dashboard specific styles for Online Parking
  */
 
 /* Parking Layout Styles */
@@ -93,7 +93,7 @@
     cursor: not-allowed;
 }
 
-.spot.processing {
+.spot.selected {
     background: #fff3e0;
     border-color: #f39c12;
 }
@@ -101,6 +101,13 @@
 .spot.booked {
     background: #ffebee;
     border-color: #e74c3c;
+}
+
+.spot.time-not-selected {
+    background: #f0f0f0;
+    border-color: #ddd;
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 .spot-number {
@@ -144,12 +151,16 @@
     background-color: #28a745;
 }
 
-.status-badge.processing {
+.status-badge.selected {
     background-color: #f39c12;
 }
 
 .status-badge.booked, .status-badge.occupied {
     background-color: #e74c3c;
+}
+
+.status-badge.time-not-selected {
+    background-color: #999;
 }
 
 /* Select Button Styles */
@@ -175,64 +186,101 @@
     width: 80%;
 }
 
-/* Booking Modal Styles */
-.booking-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-    justify-content: center;
-    align-items: center;
+/* Booking Form Styles */
+.booking-section {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 30px;
 }
 
-.booking-modal.active {
-    display: flex;
-}
-
-.modal-content {
-    background-color: white;
-    border-radius: 10px;
-    padding: 30px;
-    width: 90%;
-    max-width: 600px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    position: relative;
-}
-
-.close-modal {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    font-size: 24px;
-    cursor: pointer;
-    color: #666;
-}
-
-.modal-header {
+.booking-section h2 {
     margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #eee;
-}
-
-.modal-header h3 {
-    font-size: 20px;
     color: #00416A;
+    font-size: 24px;
 }
 
-.modal-body {
+.booking-step {
+    margin-bottom: 30px;
+}
+
+.booking-step h3 {
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 18px;
+}
+
+.form-group {
     margin-bottom: 20px;
 }
 
-.modal-footer {
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.error-message {
+    color: #e74c3c;
+    font-size: 14px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+}
+
+/* Selected Spots Styles */
+.selected-spots-header {
+    margin-bottom: 15px;
+}
+
+.selected-spots-list {
+    margin-bottom: 20px;
+}
+
+.selected-spot-item {
     display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+.spot-details {
+    flex: 1;
+}
+
+.remove-spot-btn {
+    background: none;
+    border: none;
+    color: #e74c3c;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.vehicle-input {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+
+.amount-display {
+    font-size: 24px;
+    font-weight: 600;
+    color: #00416A;
+    margin-bottom: 20px;
+}
+
+.amount-highlight {
+    animation: highlight 1s ease;
+}
+
+@keyframes highlight {
+    0% { color: #00416A; }
+    50% { color: #e74c3c; }
+    100% { color: #00416A; }
 }
 
 /* Responsive Adjustments */

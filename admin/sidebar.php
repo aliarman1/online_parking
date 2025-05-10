@@ -1,6 +1,6 @@
 <?php
 /**
- * Admin sidebar component for Smart Parking System
+ * Admin sidebar component for Online Parking
  */
 
 // Check if user is logged in and is an admin
@@ -18,7 +18,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 <div class="sidebar">
     <div class="logo">
-        <img src="https://img.icons8.com/color/96/000000/parking.png" alt="Smart Parking Logo">
+        <img src="https://img.icons8.com/color/96/000000/parking.png" alt="Online Parking Logo">
         <h2>Admin Panel</h2>
     </div>
     <nav>

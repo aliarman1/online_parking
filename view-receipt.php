@@ -1,6 +1,6 @@
 <?php
 /**
- * View Receipt page for Smart Parking System
+ * View Receipt page for Online Parking
  */
 require_once 'config.php';
 
@@ -62,7 +62,7 @@ $duration_hours = ceil(($end_time - $start_time) / 3600);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Receipt - Smart Parking System</title>
+    <title>Receipt - Online Parking</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
@@ -74,14 +74,14 @@ $duration_hours = ceil(($end_time - $start_time) / 3600);
             padding: 2rem;
             margin-bottom: 2rem;
         }
-        
+
         .receipt-header {
             text-align: center;
             margin-bottom: 2rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid #eee;
         }
-        
+
         .receipt-logo {
             display: flex;
             align-items: center;
@@ -89,34 +89,34 @@ $duration_hours = ceil(($end_time - $start_time) / 3600);
             gap: 1rem;
             margin-bottom: 1rem;
         }
-        
+
         .receipt-logo img {
             width: 50px;
             height: 50px;
         }
-        
+
         .receipt-title {
             font-size: 1.5rem;
             font-weight: 600;
             color: #00416A;
         }
-        
+
         .receipt-subtitle {
             color: #666;
             font-size: 1rem;
         }
-        
+
         .receipt-info {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 2rem;
             margin-bottom: 2rem;
         }
-        
+
         .receipt-section {
             margin-bottom: 1.5rem;
         }
-        
+
         .receipt-section h3 {
             font-size: 1.2rem;
             margin-bottom: 1rem;
@@ -124,18 +124,18 @@ $duration_hours = ceil(($end_time - $start_time) / 3600);
             border-bottom: 1px solid #eee;
             padding-bottom: 0.5rem;
         }
-        
+
         .receipt-item {
             display: flex;
             justify-content: space-between;
             margin-bottom: 0.5rem;
         }
-        
+
         .receipt-item-label {
             font-weight: 500;
             color: #555;
         }
-        
+
         .receipt-total {
             font-size: 1.2rem;
             font-weight: 600;
@@ -143,7 +143,7 @@ $duration_hours = ceil(($end_time - $start_time) / 3600);
             padding-top: 1rem;
             border-top: 1px solid #eee;
         }
-        
+
         .receipt-footer {
             text-align: center;
             margin-top: 2rem;
@@ -151,24 +151,24 @@ $duration_hours = ceil(($end_time - $start_time) / 3600);
             border-top: 1px solid #eee;
             color: #666;
         }
-        
+
         .receipt-actions {
             display: flex;
             justify-content: center;
             gap: 1rem;
             margin-top: 2rem;
         }
-        
+
         @media print {
             .sidebar, .page-header, .receipt-actions, .btn {
                 display: none !important;
             }
-            
+
             .main-content {
                 margin-left: 0 !important;
                 padding: 0 !important;
             }
-            
+
             .receipt-container {
                 box-shadow: none !important;
                 padding: 0 !important;
@@ -179,7 +179,7 @@ $duration_hours = ceil(($end_time - $start_time) / 3600);
 <body>
     <div class="dashboard-container">
         <?php include 'includes/sidebar.php'; ?>
-        
+
         <div class="main-content">
             <div class="page-header">
                 <h1 class="page-title">Receipt</h1>
@@ -188,17 +188,17 @@ $duration_hours = ceil(($end_time - $start_time) / 3600);
                     <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($user['name']); ?>&background=random" alt="User Avatar">
                 </div>
             </div>
-            
+
             <div class="receipt-container">
                 <div class="receipt-header">
                     <div class="receipt-logo">
-                        <img src="https://img.icons8.com/color/96/000000/parking.png" alt="Smart Parking Logo">
-                        <h2>Smart Parking</h2>
+                        <img src="https://img.icons8.com/color/96/000000/parking.png" alt="Online Parking Logo">
+                        <h2>Online Parking</h2>
                     </div>
                     <div class="receipt-title">Payment Receipt</div>
-                    <div class="receipt-subtitle">Thank you for using Smart Parking System</div>
+                    <div class="receipt-subtitle">Thank you for using Online Parking</div>
                 </div>
-                
+
                 <div class="receipt-info">
                     <div class="receipt-section">
                         <h3>Booking Information</h3>
@@ -215,7 +215,7 @@ $duration_hours = ceil(($end_time - $start_time) / 3600);
                             <span><?php echo ucfirst($booking['status']); ?></span>
                         </div>
                     </div>
-                    
+
                     <div class="receipt-section">
                         <h3>Customer Information</h3>
                         <div class="receipt-item">
@@ -232,7 +232,7 @@ $duration_hours = ceil(($end_time - $start_time) / 3600);
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="receipt-section">
                     <h3>Parking Details</h3>
                     <div class="receipt-item">
@@ -256,7 +256,7 @@ $duration_hours = ceil(($end_time - $start_time) / 3600);
                         <span><?php echo $duration_hours; ?> hour<?php echo $duration_hours > 1 ? 's' : ''; ?></span>
                     </div>
                 </div>
-                
+
                 <div class="receipt-section">
                     <h3>Payment Information</h3>
                     <div class="receipt-item">
@@ -280,13 +280,13 @@ $duration_hours = ceil(($end_time - $start_time) / 3600);
                         <span>$<?php echo number_format($booking['amount'], 2); ?></span>
                     </div>
                 </div>
-                
+
                 <div class="receipt-footer">
-                    <p>Thank you for choosing Smart Parking System.</p>
-                    <p>For any inquiries, please contact us at support@smartparking.com</p>
-                    <p>&copy; <?php echo date('Y'); ?> Smart Parking System. All rights reserved.</p>
+                    <p>Thank you for choosing Online Parking.</p>
+                    <p>For any inquiries, please contact us at support@onlineparking.com</p>
+                    <p>&copy; <?php echo date('Y'); ?> Online Parking. All rights reserved.</p>
                 </div>
-                
+
                 <div class="receipt-actions">
                     <button class="btn btn-primary" onclick="window.print()">
                         <i class="fas fa-print"></i> Print Receipt
@@ -298,7 +298,7 @@ $duration_hours = ceil(($end_time - $start_time) / 3600);
             </div>
         </div>
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

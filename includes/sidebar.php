@@ -1,6 +1,6 @@
 <?php
 /**
- * Sidebar component for Smart Parking System
+ * Sidebar component for Online Parking
  */
 
 // Get current page for active link highlighting
@@ -13,8 +13,8 @@ $is_admin = isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1;
 <!-- Sidebar -->
 <div class="sidebar">
     <div class="logo">
-        <img src="https://img.icons8.com/color/96/000000/parking.png" alt="Smart Parking Logo">
-        <h2>Smart Parking</h2>
+        <img src="https://img.icons8.com/color/96/000000/parking.png" alt="Online Parking Logo">
+        <h2>Online Parking</h2>
     </div>
     <nav>
         <a href="dashboard.php" class="<?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>">

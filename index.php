@@ -1,6 +1,6 @@
 <?php
 /**
- * Index page for Smart Parking System
+ * Index page for Online Parking
  * Redirects to login or dashboard based on authentication status
  */
 require_once 'database/db.php';

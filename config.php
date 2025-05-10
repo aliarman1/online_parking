@@ -1,15 +1,15 @@
 <?php
 /**
- * Configuration and utility functions for Smart Parking System
+ * Configuration and utility functions for Online Parking
  */
 
 // Include database connection
 require_once 'database/db.php';
 
 // Site configuration
-$site_name = "Smart Parking System";
-$site_url = "http://localhost/parking/new_project";
-$admin_email = "admin@smartparking.com";
+$site_name = "Online Parking";
+$site_url = "http://localhost/online_project/";
+$admin_email = "admin@onlineparking.com";
 
 // Function to calculate booking amount
 function calculate_booking_amount($start_time, $end_time, $hourly_rate) {
