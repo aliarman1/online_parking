@@ -101,16 +101,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $transaction_id = 'TXN' . time() . rand(1000, 9999);
                 }
 
+                // Use the same amount for both the payment record and booking update
+                // This ensures consistency and prevents negative values
+
                 // Insert payment record
                 $payment_sql = "INSERT INTO payments (booking_id, amount, payment_date, payment_method, transaction_id) VALUES (?, ?, NOW(), ?, ?)";
                 $payment_stmt = $conn->prepare($payment_sql);
                 $payment_stmt->bind_param("idss", $booking_id, $paid_amount, $payment_method, $transaction_id);
                 $payment_stmt->execute();
 
-                // Update booking status and amount
+                // Update booking status and amount - use the same amount as the payment
                 $update_booking_sql = "UPDATE bookings SET status = 'completed', end_time = ?, amount = ?, payment_status = 'paid' WHERE id = ?";
                 $update_booking_stmt = $conn->prepare($update_booking_sql);
-                $update_booking_stmt->bind_param("sdi", $end_time, $final_amount, $booking_id);
+                $update_booking_stmt->bind_param("sdi", $end_time, $paid_amount, $booking_id);
                 $update_booking_stmt->execute();
 
                 // Free up the parking spot
@@ -442,13 +445,17 @@ $bookings = $bookings_stmt->get_result();
                         <div class="mb-3">
                             <label for="calculated_amount" class="form-label">Calculated Amount ($)</label>
                             <input type="number" class="form-control" id="calculated_amount" readonly>
-                            <div class="form-text">Amount based on the duration and hourly rate</div>
+                            <div class="form-text">Amount based on the duration and hourly rate (for reference only)</div>
                         </div>
 
                         <div class="mb-3">
                             <label for="paid_amount" class="form-label">Paid Amount ($)</label>
                             <input type="number" class="form-control" id="paid_amount" name="paid_amount" step="0.01" required>
-                            <div class="form-text">Enter the amount paid by the customer</div>
+                            <div class="form-text">Enter the actual amount paid by the customer - this will be used as the final booking amount</div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <small><i class="fas fa-info-circle"></i> Note: The paid amount will be used as the final booking amount to ensure consistency. If you need to adjust the amount, modify the "Paid Amount" field.</small>
                         </div>
 
                         <div class="mb-3">
@@ -497,8 +504,10 @@ $bookings = $bookings_stmt->get_result();
                 const formattedEndTime = endTimeDate.toISOString().slice(0, 16);
                 document.getElementById('end_time').value = formattedEndTime;
 
-                document.getElementById('calculated_amount').value = amount;
-                document.getElementById('paid_amount').value = amount;
+                // Set both calculated and paid amount to the same value initially
+                const amountValue = parseFloat(amount).toFixed(2);
+                document.getElementById('calculated_amount').value = amountValue;
+                document.getElementById('paid_amount').value = amountValue;
 
                 // Add event listener to recalculate amount when end time changes
                 document.getElementById('end_time').addEventListener('change', recalculateAmount);
@@ -545,6 +554,12 @@ $bookings = $bookings_stmt->get_result();
                     document.getElementById('calculated_amount').value = data.amount.toFixed(2);
                     // Also update the paid amount to match by default
                     document.getElementById('paid_amount').value = data.amount.toFixed(2);
+
+                    // Add event listener to ensure calculated_amount is updated when paid_amount changes
+                    document.getElementById('paid_amount').addEventListener('change', function() {
+                        // This ensures the admin knows what they're changing from
+                        document.getElementById('calculated_amount').value = data.amount.toFixed(2);
+                    });
                 } else {
                     console.error('Error calculating amount:', data.message);
                 }

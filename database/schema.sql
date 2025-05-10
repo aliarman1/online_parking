@@ -2,8 +2,8 @@
 -- Improved database design with proper relationships and constraints
 
 -- Create database if it doesn't exist
-CREATE DATABASE IF NOT EXISTS smart_parking;
-USE smart_parking;
+CREATE DATABASE IF NOT EXISTS online_parking;
+USE online_parking;
 
 -- Drop existing tables if they exist to avoid conflicts
 DROP TABLE IF EXISTS payments;

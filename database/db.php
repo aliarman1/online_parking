@@ -5,7 +5,7 @@
 
 // Database configuration
 $host = 'localhost';
-$db   = 'smart_parking';
+$db   = 'online_parking';
 $user = 'root';
 $pass = '';
 
