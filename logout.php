@@ -1,22 +1,24 @@
 <?php
 /**
- * Logout page for Online Parking System
+ * Logout page for Smart Parking System
  */
-
-// Include database connection to get security functions
-require 'database/db.php';
-
-// Get the session name
-$session_name = session_name();
+require_once 'database/db.php';
 
 // Unset all session variables
 $_SESSION = array();
 
 // Delete the session cookie
-if (isset($_COOKIE[$session_name])) {
-    // Make sure the cookie path matches the one used when setting the cookie
+if (ini_get("session.use_cookies")) {
     $params = session_get_cookie_params();
-    setcookie($session_name, '', time() - 42000, '/', $params['domain'], $params['secure'], $params['httponly']);
+    setcookie(session_name(), '', time() - 42000,
+        $params["path"], $params["domain"],
+        $params["secure"], $params["httponly"]
+    );
+}
+
+// Delete remember me cookie if it exists
+if (isset($_COOKIE['remember_token'])) {
+    setcookie('remember_token', '', time() - 3600, '/');
 }
 
 // Destroy the session

@@ -1,232 +1,373 @@
 <?php
 /**
- * Registration page for Online Parking System
+ * Registration page for Smart Parking System
  */
+require_once 'database/db.php';
 
-// Include database connection (which already starts the session)
-require 'database/db.php';
+// Initialize variables
+$name = '';
+$email = '';
+$error = '';
+$success = '';
 
-$error = "";
-$username = "";
-$email = "";
-$password_error = "";
-
-// Handle registration form submission
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+// Process registration form
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Verify CSRF token
-    if (!verify_csrf_token($_POST['csrf_token'])) {
-        $error = "Security validation failed. Please try again.";
+    if (!isset($_POST['csrf_token']) || !verify_csrf_token($_POST['csrf_token'])) {
+        $error = "Invalid form submission. Please try again.";
     } else {
-        // Sanitize and validate inputs
-        $username = sanitize_input($_POST['username']);
+        $name = sanitize_input($_POST['name']);
         $email = sanitize_input($_POST['email']);
-        $password = $_POST['password']; // Don't sanitize password before hashing
+        $password = $_POST['password'];
         $confirm_password = $_POST['confirm_password'];
-        $role = 'User'; // Default role is User for security
-
-        // Validate email
-        if (!validate_email($email)) {
-            $error = "Invalid email format.";
-        }
-        // Validate password match
-        else if ($password !== $confirm_password) {
+        
+        // Validate input
+        if (empty($name) || empty($email) || empty($password) || empty($confirm_password)) {
+            $error = "All fields are required.";
+        } elseif (!validate_email($email)) {
+            $error = "Please enter a valid email address.";
+        } elseif ($password !== $confirm_password) {
             $error = "Passwords do not match.";
-        }
-        // Validate password strength
-        else if (!validate_password_strength($password)) {
-            $password_error = "Password must be at least 8 characters long and include uppercase, lowercase, and numbers.";
+        } elseif (!validate_password_strength($password)) {
+            $error = "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number.";
         } else {
             // Check if email already exists
-            $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
-            $stmt->bind_param("s", $email);
-            $stmt->execute();
-            $stmt->store_result();
-
-            if ($stmt->num_rows > 0) {
-                $error = "Email already exists!";
+            $check_sql = "SELECT * FROM users WHERE email = ?";
+            $check_stmt = $conn->prepare($check_sql);
+            $check_stmt->bind_param("s", $email);
+            $check_stmt->execute();
+            $check_result = $check_stmt->get_result();
+            
+            if ($check_result->num_rows > 0) {
+                $error = "Email already exists. Please use a different email or login.";
             } else {
-                // Hash password securely
-                $hashed_password = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
-
-                // Insert user into database
-                $stmt = $conn->prepare("INSERT INTO users (username, email, password, role, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())");
-                $stmt->bind_param("ssss", $username, $email, $hashed_password, $role);
-
+                // Hash password
+                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                
+                // Insert new user
+                $sql = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("sss", $name, $email, $hashed_password);
+                
                 if ($stmt->execute()) {
-                    // Redirect to login page (without passing credentials in URL)
-                    header("Location: login.php");
-                    exit();
+                    $success = "Registration successful! You can now login.";
+                    // Clear form fields
+                    $name = '';
+                    $email = '';
+                    
+                    // Redirect to login page after 2 seconds
+                    header("refresh:2;url=login.php");
                 } else {
-                    $error = "Error: " . $stmt->error;
+                    $error = "Error during registration. Please try again.";
                 }
             }
-
-            $stmt->close();
         }
     }
 }
 
-$conn->close();
+// Generate CSRF token
+$csrf_token = generate_csrf_token();
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - ParkEase</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-
+    <title>Register - Smart Parking System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #00416A, #E4E5E6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .register-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+        }
+        .register-image {
+            flex: 1;
+            background-image: url('image/registration-back.jpg');
+            background-size: cover;
+            background-position: center;
+            min-height: 600px;
+            display: none;
+        }
+        .register-form {
+            flex: 1;
+            padding: 40px;
+        }
+        .form-title {
+            color: #00416A;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        .form-subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .input-wrapper {
+            position: relative;
+        }
+        .input-wrapper i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #00416A;
+        }
+        .input-wrapper input {
+            width: 100%;
+            padding: 12px 15px 12px 45px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        .input-wrapper input:focus {
+            border-color: #00416A;
+            box-shadow: 0 0 0 3px rgba(0, 65, 106, 0.2);
+            outline: none;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            cursor: pointer;
+        }
+        .password-strength {
+            margin-top: 5px;
+            font-size: 14px;
+            color: #666;
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: #00416A;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #002D4A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 65, 106, 0.3);
+        }
+        .switch-form {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+        .switch-form a {
+            color: #00416A;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .register-footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #999;
+            font-size: 14px;
+        }
+        @media (min-width: 768px) {
+            .register-image {
+                display: block;
+            }
+        }
+    </style>
 </head>
-
-<body class="bg-gray-100 flex items-center justify-center h-screen" style="background-image: url('image/registration-back.jpg'); background-size: cover; background-position: center;">
-    <div class="backdrop-blur-sm bg-orange-900/50 p-8 rounded-lg shadow-lg shadow-orange-300 w-96 border border-white/80 border-2">
-        <h2 class="text-2xl font-bold mb-6 text-center text-white">Register</h2>
-        <?php if ($error): ?>
-            <div class="mb-4 p-2 bg-red-100/70 text-red-700 rounded backdrop-blur-sm">
-                <?php echo $error; ?>
+<body>
+    <div class="register-container">
+        <div class="register-image"></div>
+        <div class="register-form">
+            <h2 class="form-title">Create Account</h2>
+            <p class="form-subtitle">Please fill in the form to register</p>
+            
+            <?php if ($error): ?>
+                <div class="alert alert-danger"><?php echo $error; ?></div>
+            <?php endif; ?>
+            
+            <?php if ($success): ?>
+                <div class="alert alert-success"><?php echo $success; ?></div>
+            <?php endif; ?>
+            
+            <form method="POST" action="" id="registerForm">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                
+                <div class="input-group">
+                    <label for="name">Full Name</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="name" name="name" value="<?php echo htmlspecialchars($name); ?>" placeholder="Enter your full name" required>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="email">Email</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($email); ?>" placeholder="Enter your email" required>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required onkeyup="checkPasswordStrength()">
+                        <i class="fas fa-eye password-toggle" onclick="togglePassword('password')"></i>
+                    </div>
+                    <div class="password-strength" id="passwordStrength"></div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="confirm_password">Confirm Password</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm your password" required onkeyup="checkPasswordMatch()">
+                        <i class="fas fa-eye password-toggle" onclick="togglePassword('confirm_password')"></i>
+                    </div>
+                    <div class="password-strength" id="passwordMatch"></div>
+                </div>
+                
+                <button type="submit" class="btn">
+                    <i class="fas fa-user-plus"></i> Register
+                </button>
+            </form>
+            
+            <div class="switch-form">
+                Already have an account? <a href="login.php">Login</a>
             </div>
-        <?php endif; ?>
-        <form method="POST" action="" onsubmit="return validateForm()">
-            <!-- CSRF Token -->
-            <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
-
-            <div class="mb-4">
-                <label class="block text-white">Username</label>
-                <input type="text" name="username" id="username" value="<?php echo htmlspecialchars($username); ?>" required
-                    class="w-full px-4 py-2 border rounded-lg focus:outline-none bg-black/20 text-white focus:scale-105 transition-all ease-in-out duration-1000"
-                    autocomplete="username">
+            
+            <div class="register-footer">
+                &copy; <?php echo date('Y'); ?> Smart Parking System. All rights reserved.
             </div>
-            <div class="mb-4">
-                <label class="block text-white">Email</label>
-                <input type="email" name="email" id="email" value="<?php echo htmlspecialchars($email); ?>" required
-                    class="w-full px-4 py-2 border rounded-lg focus:outline-none bg-black/20 text-white focus:scale-105 transition-all ease-in-out duration-1000"
-                    autocomplete="email">
-                <span id="email-error" class="text-red-500 text-sm hidden">Please enter a valid email address (e.g.,
-                    example@example.com).</span>
-            </div>
-            <div class="mb-4 relative">
-                <label class="block text-white">Password</label>
-                <input type="password" name="password" id="password" required
-                    class="w-full px-4 py-2 border rounded-lg focus:outline-none bg-black/20 text-white focus:scale-105 transition-all ease-in-out duration-1000"
-                    autocomplete="new-password">
-                <!-- Eye icon to toggle password visibility -->
-                <i class="fas fa-eye absolute right-3 top-10 cursor-pointer text-white" onclick="togglePassword('password')"></i>
-                <?php if ($password_error): ?>
-                    <span class="text-red-500 text-sm block mt-1"><?php echo $password_error; ?></span>
-                <?php endif; ?>
-            </div>
-
-            <div class="mb-4 relative">
-                <label class="block text-white">Confirm Password</label>
-                <input type="password" name="confirm_password" id="confirm_password" required
-                    class="w-full px-4 py-2 border rounded-lg focus:outline-none bg-black/20 text-white focus:scale-105 transition-all ease-in-out duration-1000"
-                    autocomplete="new-password">
-                <i class="fas fa-eye absolute right-3 top-10 cursor-pointer text-white" onclick="togglePassword('confirm_password')"></i>
-            </div>
-
-            <!-- Hidden role field - for security, we set this on the server side -->
-            <input type="hidden" name="role" value="User">
-            <button type="submit"
-                class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                Register
-            </button>
-        </form>
-
-        <p class="mt-4 text-center text-white">Already have an account? <a href="login.php" class="text-blue-300 hover:text-blue-500">Login</a></p>
+        </div>
     </div>
+    
     <script>
-        // Function to validate email format
-        function validateEmail(email) {
-            // Regex to check for a valid email format and ensure the domain ends with a fully written TLD
-            const regex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
-            return regex.test(email);
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = input.nextElementSibling;
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
         }
-
-        // Function to validate password strength
-        function validatePasswordStrength(password) {
-            // At least 8 characters
+        
+        function checkPasswordStrength() {
+            const password = document.getElementById('password').value;
+            const strengthDiv = document.getElementById('passwordStrength');
+            
+            // Reset strength indicator
+            strengthDiv.innerHTML = '';
+            
+            if (password.length === 0) return;
+            
+            let strength = 0;
+            let feedback = [];
+            
+            // Check length
             if (password.length < 8) {
-                return false;
+                feedback.push('Password should be at least 8 characters');
+            } else {
+                strength += 1;
             }
-
-            // At least one uppercase letter
+            
+            // Check for uppercase letters
             if (!/[A-Z]/.test(password)) {
-                return false;
+                feedback.push('Add uppercase letter');
+            } else {
+                strength += 1;
             }
-
-            // At least one lowercase letter
+            
+            // Check for lowercase letters
             if (!/[a-z]/.test(password)) {
-                return false;
+                feedback.push('Add lowercase letter');
+            } else {
+                strength += 1;
             }
-
-            // At least one number
+            
+            // Check for numbers
             if (!/[0-9]/.test(password)) {
-                return false;
-            }
-
-            return true;
-        }
-
-        // Function to validate the form
-        function validateForm() {
-            const emailInput = document.getElementById('email');
-            const emailError = document.getElementById('email-error');
-            const passwordInput = document.getElementById('password');
-            const confirmPasswordInput = document.getElementById('confirm_password');
-            const email = emailInput.value.trim();
-            const password = passwordInput.value;
-            const confirmPassword = confirmPasswordInput.value;
-            let isValid = true;
-
-            // Validate email
-            if (!validateEmail(email)) {
-                emailError.textContent = 'Please enter a valid email address (e.g., example@example.com).';
-                emailError.classList.remove('hidden');
-                emailInput.focus();
-                isValid = false;
+                feedback.push('Add number');
             } else {
-                emailError.classList.add('hidden');
+                strength += 1;
             }
-
-            // Validate password strength
-            if (!validatePasswordStrength(password)) {
-                alert('Password must be at least 8 characters long and include uppercase, lowercase, and numbers.');
-                passwordInput.focus();
-                isValid = false;
+            
+            // Display strength
+            let strengthText = '';
+            let strengthColor = '';
+            
+            switch (strength) {
+                case 0:
+                case 1:
+                    strengthText = 'Weak';
+                    strengthColor = '#dc3545';
+                    break;
+                case 2:
+                case 3:
+                    strengthText = 'Medium';
+                    strengthColor = '#ffc107';
+                    break;
+                case 4:
+                    strengthText = 'Strong';
+                    strengthColor = '#28a745';
+                    break;
             }
-
-            // Validate password match
-            if (password !== confirmPassword) {
-                alert('Passwords do not match.');
-                confirmPasswordInput.focus();
-                isValid = false;
+            
+            strengthDiv.innerHTML = `<span style="color: ${strengthColor};">${strengthText}</span>`;
+            if (feedback.length > 0) {
+                strengthDiv.innerHTML += ': ' + feedback.join(', ');
             }
-
-            return isValid;
         }
-
-        // Function to toggle password visibility
-        function togglePassword(fieldId) {
-            const passwordField = document.getElementById(fieldId);
-            const eyeIcon = passwordField.nextElementSibling;
-
-            if (passwordField.type === "password") {
-                passwordField.type = "text";
-                eyeIcon.classList.remove("fa-eye");
-                eyeIcon.classList.add("fa-eye-slash");
+        
+        function checkPasswordMatch() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            const matchDiv = document.getElementById('passwordMatch');
+            
+            if (confirmPassword.length === 0) {
+                matchDiv.innerHTML = '';
+                return;
+            }
+            
+            if (password === confirmPassword) {
+                matchDiv.innerHTML = '<span style="color: #28a745;">Passwords match</span>';
             } else {
-                passwordField.type = "password";
-                eyeIcon.classList.remove("fa-eye-slash");
-                eyeIcon.classList.add("fa-eye");
+                matchDiv.innerHTML = '<span style="color: #dc3545;">Passwords do not match</span>';
             }
         }
     </script>
 </body>
-
 </html>

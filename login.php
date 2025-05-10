@@ -1,177 +1,309 @@
 <?php
 /**
- * Login page for Online Parking System
+ * Login page for Smart Parking System
  */
+require_once 'database/db.php';
 
-// Include database connection
-require 'database/db.php';
+// Initialize variables
+$email = '';
+$error = '';
+$success = '';
 
-$error = "";
-$login_identifier = "";
+// Check for error messages in URL
+if (isset($_GET['error']) && $_GET['error'] === 'user_not_found') {
+    $error = "Your session has expired or your account was not found. Please login again.";
+}
 
-// Handle login form submission
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+// Process login form
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Verify CSRF token
     if (!isset($_POST['csrf_token']) || !verify_csrf_token($_POST['csrf_token'])) {
-        $error = "Security validation failed. Please try again.";
+        $error = "Invalid form submission. Please try again.";
     } else {
-        $login_identifier = isset($_POST['login_identifier']) ? sanitize_input($_POST['login_identifier']) : "";
-        $password = isset($_POST['password']) ? $_POST['password'] : ""; // Don't sanitize password before verification
+        $email = sanitize_input($_POST['email']);
+        $password = $_POST['password'];
+        $remember = isset($_POST['remember']) ? true : false;
 
         // Check for too many failed login attempts
-        if (check_login_attempts($login_identifier, $conn)) {
+        if (check_login_attempts($email, $conn)) {
             $error = "Too many failed login attempts. Please try again later.";
         } else {
-            // Fetch user from database - check both username and email
-            $stmt = $conn->prepare("SELECT id, username, email, password, role FROM users WHERE username = ? OR email = ?");
-            $stmt->bind_param("ss", $login_identifier, $login_identifier);
-            $stmt->execute();
-            $stmt->store_result();
+            // Validate input
+            if (empty($email) || empty($password)) {
+                $error = "Email and password are required.";
+            } else {
+                // Check if user exists
+                $sql = "SELECT * FROM users WHERE email = ?";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("s", $email);
+                $stmt->execute();
+                $result = $stmt->get_result();
 
-            if ($stmt->num_rows > 0) {
-                $stmt->bind_result($id, $username, $db_email, $hashed_password, $role);
-                $stmt->fetch();
+                if ($result->num_rows == 1) {
+                    $user = $result->fetch_assoc();
+                    if (password_verify($password, $user['password'])) {
+                        // Log successful login
+                        log_auth_attempt($email, 1, $conn);
 
-                // For admin and user14, use direct comparison for the known password 'admin' or 'user14'
-                if (($username === 'admin' && $password === 'admin') ||
-                    ($username === 'user14' && $password === 'user14') ||
-                    password_verify($password, $hashed_password)) {
+                        // Update last login time
+                        update_last_login($user['id'], $conn);
 
-                    // Successful login
-                    $_SESSION['user_id'] = $id;
-                    $_SESSION['username'] = $username;
-                    $_SESSION['email'] = $db_email;
-                    $_SESSION['role'] = $role;
-                    $_SESSION['login_time'] = time(); // Add login timestamp for debugging
+                        // Set session variables
+                        $_SESSION['user_id'] = $user['id'];
+                        $_SESSION['email'] = $user['email'];
+                        $_SESSION['name'] = $user['name'];
+                        $_SESSION['is_admin'] = $user['is_admin'];
 
-                    // Update last login time
-                    update_last_login($id, $conn);
+                        // Set cookie if remember me is checked (30 days)
+                        if ($remember) {
+                            $token = bin2hex(random_bytes(16));
+                            setcookie('remember_token', $token, time() + 30 * 24 * 60 * 60, '/');
+                        }
 
-                    // Log successful login
-                    log_auth_attempt($login_identifier, 1, $conn);
-
-                    // Regenerate session ID for security
-                    session_regenerate_id(true);
-
-                    // Make sure session data persists after regenerating ID
-                    $_SESSION['user_id'] = $id;
-                    $_SESSION['username'] = $username;
-                    $_SESSION['email'] = $db_email;
-                    $_SESSION['role'] = $role;
-                    $_SESSION['login_time'] = time();
-
-                    // Redirect based on role
-                    if ($role == 'Admin') {
-                        header("Location: admin_dashboard.php");
+                        // Redirect based on user role
+                        if ($user['is_admin'] == 1) {
+                            header("Location: admin/dashboard.php");
+                        } else {
+                            header("Location: dashboard.php");
+                        }
                         exit();
                     } else {
-                        // Ensure headers are sent properly
-                        header("Location: index.php");
-                        exit();
+                        // Log failed login
+                        log_auth_attempt($email, 0, $conn);
+                        $error = "Invalid password!";
                     }
                 } else {
-                    // Failed login - wrong password
-                    $error = "Invalid username/email or password.";
-                    log_auth_attempt($login_identifier, 0, $conn);
+                    // Log failed login
+                    log_auth_attempt($email, 0, $conn);
+                    $error = "User not found!";
                 }
-            } else {
-                // Failed login - user not found
-                $error = "Invalid username/email or password.";
-                log_auth_attempt($login_identifier, 0, $conn);
             }
-
-            $stmt->close();
         }
     }
 }
 
-$conn->close();
+// Generate CSRF token
+$csrf_token = generate_csrf_token();
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - ParkEase</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- daisy UI -->
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Login - Smart Parking System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        input:-webkit-autofill,
-        input:-webkit-autofill:hover,
-        input:-webkit-autofill:focus,
-        input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
-            -webkit-text-fill-color: white !important;
-            -webkit-background-clip: text !important;
-            /* -webkit-background-color: transparent !important; */
-            /* transition: all ease-in-out duration-1000; */
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #00416A, #E4E5E6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+        }
+        .login-image {
+            flex: 1;
+            background-image: url('image/login-back.jpg');
+            background-size: cover;
+            background-position: center;
+            min-height: 500px;
+            display: none;
+        }
+        .login-form {
+            flex: 1;
+            padding: 40px;
+        }
+        .form-title {
+            color: #00416A;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        .form-subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .input-wrapper {
+            position: relative;
+        }
+        .input-wrapper i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #00416A;
+        }
+        .input-wrapper input {
+            width: 100%;
+            padding: 12px 15px 12px 45px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        .input-wrapper input:focus {
+            border-color: #00416A;
+            box-shadow: 0 0 0 3px rgba(0, 65, 106, 0.2);
+            outline: none;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            cursor: pointer;
+        }
+        .remember-forgot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .remember-me {
+            display: flex;
+            align-items: center;
+        }
+        .remember-me input {
+            margin-right: 8px;
+        }
+        .forgot-password a {
+            color: #00416A;
+            text-decoration: none;
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: #00416A;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #002D4A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 65, 106, 0.3);
+        }
+        .switch-form {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+        .switch-form a {
+            color: #00416A;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .login-footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #999;
+            font-size: 14px;
+        }
+        @media (min-width: 768px) {
+            .login-image {
+                display: block;
+            }
         }
     </style>
-
-
 </head>
+<body>
+    <div class="login-container">
+        <div class="login-image"></div>
+        <div class="login-form">
+            <h2 class="form-title">Welcome Back</h2>
+            <p class="form-subtitle">Please login to your account</p>
 
-<body class="bg-gray-100 flex items-center justify-center h-screen"
-    style="background-image: url('image/registration-back.jpg'); background-size: cover; background-position: center;">
-    <div
-        class="backdrop-blur-sm bg-orange-900/50 p-8 rounded-lg shadow-lg shadow-orange-300 w-96 border border-white/80 border-2 ">
-        <h2 class="text-2xl font-bold mb-6 text-center text-white">Login</h2>
-        <?php if ($error): ?>
-            <div class="mb-4 p-2 bg-red-100/70 text-red-700 rounded backdrop-blur-sm">
-                <?php echo $error; ?>
-            </div>
-        <?php endif; ?>
-        <form method="POST" action="">
-            <!-- CSRF Token -->
-            <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
+            <?php if ($error): ?>
+                <div class="alert alert-danger"><?php echo $error; ?></div>
+            <?php endif; ?>
 
-            <div class="mb-4">
-                <label class="block text-white">Username or Email</label>
-                <input type="text" name="login_identifier" id="login_identifier" value="<?php echo htmlspecialchars($login_identifier); ?>" required
-                    class="w-full px-4 py-2 border border-white border-2 rounded-lg focus:outline-none focus:scale-105 transition-all ease-in-out duration-1000 text-white">
+            <?php if ($success): ?>
+                <div class="alert alert-success"><?php echo $success; ?></div>
+            <?php endif; ?>
+
+            <form method="POST" action="">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+
+                <div class="input-group">
+                    <label for="email">Email</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($email); ?>" placeholder="Enter your email" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                        <i class="fas fa-eye password-toggle" onclick="togglePassword('password')"></i>
+                    </div>
+                </div>
+
+                <div class="remember-forgot">
+                    <div class="remember-me">
+                        <input type="checkbox" id="remember" name="remember">
+                        <label for="remember">Remember me</label>
+                    </div>
+                    <div class="forgot-password">
+                        <a href="forgot-password.php">Forgot Password?</a>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </form>
+
+            <div class="switch-form">
+                Don't have an account? <a href="register.php">Sign Up</a>
             </div>
-            <div class="mb-4 relative">
-                <label class="block text-white">Password</label>
-                <input type="password" name="password" id="password" required
-                    class="w-full px-4 py-2 border border-white border-2 rounded-lg focus:outline-none focus:scale-105 transition-all ease-in-out duration-1000 bg-black/20 text-white"
-                    autocomplete="current-password">
-                <!-- Eye icon to toggle password visibility -->
-                <i class="fas fa-eye absolute right-3 top-10 cursor-pointer text-white"
-                    onclick="togglePassword('password')"></i>
+
+            <div class="login-footer">
+                &copy; <?php echo date('Y'); ?> Smart Parking System. All rights reserved.
             </div>
-            <button type="submit"
-                class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none backdrop-blur-sm">
-                Login
-            </button>
-        </form>
-        <p class="mt-4 text-center text-white">Don't have an account? <a href="register.php"
-                class="text-blue-300 hover:text-blue-400">Register</a></p>
+        </div>
     </div>
 
     <script>
-        function togglePassword(fieldId) {
-            const passwordField = document.getElementById(fieldId);
-            const eyeIcon = passwordField.nextElementSibling;
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = input.nextElementSibling;
 
-            if (passwordField.type === "password") {
-                passwordField.type = "text";
-                eyeIcon.classList.remove("fa-eye");
-                eyeIcon.classList.add("fa-eye-slash");
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
             } else {
-                passwordField.type = "password";
-                eyeIcon.classList.remove("fa-eye-slash");
-                eyeIcon.classList.add("fa-eye");
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
             }
         }
     </script>
 </body>
-
 </html>
