@@ -37,7 +37,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <a href="payments.php" class="<?php echo $current_page == 'payments.php' ? 'active' : ''; ?>">
             <i class="fas fa-money-bill-wave"></i> Payments
         </a>
-        <a href="reports.php" class="<?php echo $current_page == 'reports.php' ? 'active' : ''; ?>">
+        <a href="reports.php" class="<?php echo ($current_page == 'reports.php' || $current_page == 'profit-analysis.php') ? 'active' : ''; ?>">
             <i class="fas fa-chart-bar"></i> Reports
         </a>
         <a href="../dashboard.php" class="<?php echo $current_page == '../dashboard.php' ? 'active' : ''; ?>">

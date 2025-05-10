@@ -301,3 +301,243 @@ $popular_spots = $popular_spots_stmt->get_result();
                 </div>
             </div>
             <?php endif; ?>
+
+            <?php if ($report_type === 'bookings'): ?>
+            <!-- Booking Analysis -->
+            <div class="row mb-4">
+                <!-- Booking Status Chart -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Booking Status Distribution</h5>
+                        </div>
+                        <div class="card-body">
+                            <div style="height: 300px;">
+                                <canvas id="bookingStatusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Booking Trends -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Booking Statistics</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="p-3 border rounded bg-light">
+                                        <h6 class="text-muted">Active Bookings</h6>
+                                        <h4 class="text-primary"><?php echo number_format($booking_stats['active_bookings'] ?? 0); ?></h4>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="p-3 border rounded bg-light">
+                                        <h6 class="text-muted">Completed Bookings</h6>
+                                        <h4 class="text-success"><?php echo number_format($booking_stats['completed_bookings'] ?? 0); ?></h4>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="p-3 border rounded bg-light">
+                                        <h6 class="text-muted">Cancelled Bookings</h6>
+                                        <h4 class="text-danger"><?php echo number_format($booking_stats['cancelled_bookings'] ?? 0); ?></h4>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="p-3 border rounded bg-light">
+                                        <h6 class="text-muted">Average Duration</h6>
+                                        <h4 class="text-warning"><?php echo round($booking_stats['avg_duration'] ?? 0, 1); ?> hrs</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($report_type === 'spots'): ?>
+            <!-- Parking Spot Analysis -->
+            <div class="row mb-4">
+                <!-- Most Popular Spots -->
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Most Popular Parking Spots</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Spot Number</th>
+                                            <th>Floor</th>
+                                            <th>Type</th>
+                                            <th>Hourly Rate</th>
+                                            <th>Bookings</th>
+                                            <th>Total Revenue</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php while ($row = $popular_spots->fetch_assoc()): ?>
+                                        <tr>
+                                            <td><?php echo $row['spot_number']; ?></td>
+                                            <td><?php echo $row['floor_number']; ?></td>
+                                            <td><?php echo ucfirst($row['type']); ?></td>
+                                            <td>$<?php echo number_format($row['hourly_rate'], 2); ?></td>
+                                            <td><?php echo number_format($row['booking_count']); ?></td>
+                                            <td>$<?php echo number_format($row['total_revenue'] ?? 0, 2); ?></td>
+                                        </tr>
+                                        <?php endwhile; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Monthly Revenue Chart
+        const monthlyRevenueCtx = document.getElementById('monthlyRevenueChart');
+        if (monthlyRevenueCtx) {
+            new Chart(monthlyRevenueCtx, {
+                type: 'line',
+                data: {
+                    labels: <?php echo json_encode($monthly_revenue_labels); ?>,
+                    datasets: [{
+                        label: 'Monthly Revenue',
+                        data: <?php echo json_encode($monthly_revenue_data); ?>,
+                        backgroundColor: 'rgba(13, 110, 253, 0.2)',
+                        borderColor: 'rgba(13, 110, 253, 1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Daily Revenue Chart
+        const dailyRevenueCtx = document.getElementById('dailyRevenueChart');
+        if (dailyRevenueCtx) {
+            new Chart(dailyRevenueCtx, {
+                type: 'bar',
+                data: {
+                    labels: <?php echo json_encode($daily_revenue_labels); ?>,
+                    datasets: [{
+                        label: 'Daily Revenue',
+                        data: <?php echo json_encode($daily_revenue_data); ?>,
+                        backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                        borderColor: 'rgba(13, 110, 253, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Payment Method Chart
+        const paymentMethodCtx = document.getElementById('paymentMethodChart');
+        if (paymentMethodCtx) {
+            new Chart(paymentMethodCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Cash', 'Card', 'PayPal', 'Bank Transfer'],
+                    datasets: [{
+                        data: [
+                            <?php echo $revenue_stats['cash_revenue'] ?? 0; ?>,
+                            <?php echo $revenue_stats['card_revenue'] ?? 0; ?>,
+                            <?php echo $revenue_stats['paypal_revenue'] ?? 0; ?>,
+                            <?php echo $revenue_stats['bank_transfer_revenue'] ?? 0; ?>
+                        ],
+                        backgroundColor: [
+                            'rgba(25, 135, 84, 0.7)',
+                            'rgba(13, 110, 253, 0.7)',
+                            'rgba(111, 66, 193, 0.7)',
+                            'rgba(255, 193, 7, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(25, 135, 84, 1)',
+                            'rgba(13, 110, 253, 1)',
+                            'rgba(111, 66, 193, 1)',
+                            'rgba(255, 193, 7, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        // Booking Status Chart
+        const bookingStatusCtx = document.getElementById('bookingStatusChart');
+        if (bookingStatusCtx) {
+            new Chart(bookingStatusCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Active', 'Completed', 'Cancelled'],
+                    datasets: [{
+                        data: [
+                            <?php echo $booking_stats['active_bookings'] ?? 0; ?>,
+                            <?php echo $booking_stats['completed_bookings'] ?? 0; ?>,
+                            <?php echo $booking_stats['cancelled_bookings'] ?? 0; ?>
+                        ],
+                        backgroundColor: [
+                            'rgba(13, 110, 253, 0.7)',
+                            'rgba(25, 135, 84, 0.7)',
+                            'rgba(220, 53, 69, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(13, 110, 253, 1)',
+                            'rgba(25, 135, 84, 1)',
+                            'rgba(220, 53, 69, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+    </script>
+</body>
+</html>
